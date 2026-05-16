@@ -1,0 +1,15 @@
+[Unit]
+Description=Dashboard Flask file server
+After=network.target
+
+[Service]
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/opt/dashboard-file-server
+EnvironmentFile=/etc/dashboard-file-server.env
+ExecStart=/opt/dashboard-file-server/.venv/bin/python /opt/dashboard-file-server/app.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,14 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+.Python
+
+.env
+.env.*
+!.env.example
+
+.venv/
+venv/
+
+content/*
+!content/.gitkeep

@@ -1,0 +1,15 @@
+[Unit]
+Description=Lighthouse MCP Streamable HTTP server
+After=network.target
+
+[Service]
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/opt/dashboard-file-server
+EnvironmentFile=/etc/dashboard-file-server.env
+ExecStart=/opt/dashboard-file-server/.venv/bin/uvicorn lighthouse_mcp:app --host 0.0.0.0 --port 5002
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
