@@ -1,24 +1,8 @@
 # Lighthouse
 
-A personal AI knowledge infrastructure layer. Structured markdown files that an AI agent can read, write, and build on over time — so context compounds instead of evaporating between sessions.
+Personal AI knowledge infrastructure. A flat directory of markdown files exposed over HTTP and MCP so an AI agent can read and write persistent context across sessions.
 
-The core insight: AI agents are only as good as the context they're grounded in. Most people give them none. Lighthouse is a persistent, human-readable knowledge store that lives alongside your agent and grows with it.
-
----
-
-## What It Does
-
-Lighthouse runs a lightweight server exposing a flat `content/` directory of markdown files. An AI agent (via MCP) can list, read, and update those files during a session. You can also read and edit them directly — they're just text.
-
-Over time the directory becomes a structured external memory: preferences, decisions, ongoing projects, domain knowledge, anything the agent should carry forward. The agent reads what it needs, updates what changed, and the context is there next time without you having to re-explain it.
-
-This is the personal, single-user version. One server, one content directory, one agent with persistent context.
-
----
-
-## Why It Works
-
-Standard AI sessions are stateless. You rebuild context every time, or you paste in notes, or you just accept that the agent doesn't know what it should. Lighthouse makes context durable without requiring a database, a vector store, or a retrieval pipeline. Markdown files are readable by humans and machines. They version cleanly in git. They're editable in any text editor. The simplicity is load-bearing.
+Context compounds over time. The agent reads what's relevant, updates what changed, and it's there next session without re-explaining. Files are plain markdown — readable and editable directly.
 
 ---
 
@@ -26,17 +10,17 @@ Standard AI sessions are stateless. You rebuild context every time, or you paste
 
 | File | Purpose |
 |---|---|
-| `app.py` | Flask HTTP API for file access |
+| `app.py` | Flask HTTP API |
 | `lighthouse_mcp.py` | MCP Streamable HTTP server |
-| `content_store.py` | Shared file validation and storage helpers |
-| `*.service` | systemd units for running both services on Ubuntu |
+| `content_store.py` | File validation and storage helpers |
+| `*.service` | systemd units for Ubuntu |
 | `content/.gitkeep` | Placeholder — real content is gitignored |
 
 ---
 
 ## Quickstart
 
-**Requirements:** Python 3.10+, Linux with systemd (optional but recommended for always-on use)
+**Requirements:** Python 3.10+
 
 ```sh
 python3 -m venv .venv
@@ -65,25 +49,41 @@ uvicorn lighthouse_mcp:app --host 0.0.0.0 --port 5002
 
 ## API
 
-**Flask endpoints** (require `Authorization: Bearer $DASHBOARD_TOKEN`):
-
 ```
 GET  /index              List all files in content/
 GET  /files/<filename>   Read a file
 POST /files/<filename>   Write a file
 ```
 
-**MCP endpoint:**
+---
+
+## Auth and Deployment
+
+The Flask API uses bearer token auth on every request:
+
+```http
+Authorization: Bearer $DASHBOARD_TOKEN
+```
+
+Or via query param:
 
 ```
-http://YOUR_HOST:5002/mcp
+?token=$DASHBOARD_TOKEN
 ```
 
-The MCP service does not enforce token auth itself. Run it on a trusted network or behind an authenticating reverse proxy if exposed externally.
+The MCP server has no built-in auth. It should not be exposed directly. Put it behind NGINX with basic auth or mutual TLS if accessible outside localhost:
+
+```nginx
+location /mcp {
+    auth_basic "Lighthouse";
+    auth_basic_user_file /etc/nginx/.htpasswd;
+    proxy_pass http://127.0.0.1:5002;
+}
+```
 
 ---
 
-## Ubuntu Systemd Install (Always-On)
+## Ubuntu Systemd Install
 
 ```sh
 sudo mkdir -p /opt/dashboard-file-server /home/ubuntu/lighthouse/content
@@ -100,6 +100,6 @@ sudo systemctl enable --now dashboard-file-server lighthouse-mcp
 
 ## Notes
 
-- Content files, `.env` files, virtual environments, and Python caches are gitignored by default
-- Do not commit real notes, tokens, or production credentials
-- The content directory is intentionally flat — simplicity over hierarchy
+- `content/`, `.env`, virtualenvs, and Python caches are gitignored
+- Content directory is intentionally flat
+- Do not commit tokens or credentials
